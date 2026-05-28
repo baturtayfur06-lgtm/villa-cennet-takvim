@@ -42,10 +42,10 @@ def check_password():
     if not st.session_state.authenticated:
         st.title("🔒 Giriş Yetkisi Gerekli")
         sifre = st.text_input("Lütfen Giriş Şifresini Yazın:", type="password")
-        if st.button("Giriş Yap") and sifre == "batur123": # Şifreni buradan değiştirebilirsin
+        if st.button("Giriş Yap") and sifre == "villacennet48": # Şifreni buradan değiştirebilirsin
             st.session_state.authenticated = True
             st.rerun()
-        elif sifre and sifre != "batur123":
+        elif sifre and sifre != "villacennet48":
             st.error("Hatalı şifre! Lütfen tekrar deneyin.")
         return False
     return True
