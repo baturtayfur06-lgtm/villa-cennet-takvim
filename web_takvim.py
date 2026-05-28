@@ -13,7 +13,7 @@ from datetime import datetime
 from PIL import Image
 
 # Sayfa Ayarları (Sekme adı ve ikon)
-st.set_page_config(page_title="Villa Rezervasyon Paneli", page_icon="📅", layout="centered")
+st.set_page_config(page_title="Villa Cennet Rezervasyon Paneli", page_icon="📅", layout="centered")
 
 # --- VERİ YÖNETİMİ ---
 DATA_FILE = "villa_takvim_veri.json"
