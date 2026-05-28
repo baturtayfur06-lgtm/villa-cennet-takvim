@@ -52,8 +52,8 @@ def check_password():
 
 if check_password():
     
-    if os.path.exists("logo.jpg"):
-        image = Image.open("logo.jpg")
+    if os.path.exists("villa.jpeg"):
+        image = Image.open("villa.jpeg")
         st.image(image, use_container_width=True)
     
     # İŞTE O DEĞİŞEN BAŞLIK:
