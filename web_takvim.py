@@ -9,7 +9,7 @@ import streamlit as st
 import calendar
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from PIL import Image
 
 # Sayfa Ayarları
@@ -42,67 +42,95 @@ def check_password():
     if not st.session_state.authenticated:
         st.title("🔒 Giriş Yetkisi Gerekli")
         sifre = st.text_input("Lütfen Giriş Şifresini Yazın:", type="password")
-        if st.button("Giriş Yap") and sifre == "villacennet48":
+        if st.button("Giriş Yap") and sifre == "batur123": # Şifreni buradan değiştirebilirsin
             st.session_state.authenticated = True
             st.rerun()
-        elif sifre and sifre != "villacennet48":
+        elif sifre and sifre != "batur123":
             st.error("Hatalı şifre! Lütfen tekrar deneyin.")
         return False
     return True
 
 if check_password():
     
-    if os.path.exists("villa.jpeg"):
-        image = Image.open("villa.jpeg")
+    if os.path.exists("logo.jpg"):
+        image = Image.open("logo.jpg")
         st.image(image, use_container_width=True)
     
-    # İŞTE O DEĞİŞEN BAŞLIK:
     st.title("🏡 Villa Cennet Rezervasyon Yönetimi")
     st.write("Telefon ve bilgisayardan anlık müsaitlik yönetim paneli.")
     
-    # --- AY / YIL SEÇİMİ ---
-    today = datetime.now()
+    # --- AY / YIL SEÇİMİ (Takvim Ekranı İçin) ---
+    st.write("---")
     col_yil, col_ay = st.columns(2)
     
     with col_yil:
-        secili_yil = st.selectbox("Yıl Seçin", options=[2026, 2027, 2028], index=0)
+        secili_yil = st.selectbox("Görüntülenecek Yıl", options=[2026, 2027, 2028], index=0)
     with col_ay:
         aylar_tr = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
-        secili_ay = st.selectbox("Ay Seçin", options=list(range(1, 13)), format_func=lambda x: aylar_tr[x-1], index=4)
+        secili_ay = st.selectbox("Görüntülenecek Ay", options=list(range(1, 13)), format_func=lambda x: aylar_tr[x-1], index=datetime.now().month - 1)
 
-    # --- GÜNCELLEME FORMU ---
-    st.subheader("📝 Gün Durumu Güncelle")
+    # --- 🗓️ YENİ AKILLI REZERVASYON FORMU ---
+    st.subheader("📅 Yeni Rezervasyon Ekle (Tarih Aralığı)")
     
-    _, num_days = calendar.monthrange(secili_yil, secili_ay)
-    
-    col_gun, col_durum = st.columns([1, 2])
-    with col_gun:
-        secili_gun = st.number_input("Gün", min_value=1, max_value=num_days, value=1)
-    with col_durum:
-        durum_secenekleri = {"Müsait (Boş)": "bos", "Giriş Günü (Yarım)": "giris", "Tam Dolu": "dolu", "Çıkış Günü (Yarım)": "cikis"}
-        secili_durum_metin = st.selectbox("Durum", options=list(durum_secenekleri.keys()))
-        secili_durum = durum_secenekleri[secili_durum_metin]
+    col_tarih1, col_tarih2 = st.columns(2)
+    with col_tarih1:
+        giris_tarihi = st.date_input("Müşteri Giriş Tarihi", value=datetime.now())
+    with col_tarih2:
+        cikis_tarihi = st.date_input("Müşteri Çıkış Tarihi", value=datetime.now() + timedelta(days=1))
         
-    secili_not = st.text_input("Rezervasyon Notu (Müşteri adı, kapora, telefon vb.):")
+    rez_notu = st.text_input("Rezervasyon Notu (Müşteri Adı, Telefon, Kapora vb.):")
     
-    key = f"{secili_yil}-{secili_ay}-{secili_gun}"
-    
-    if st.button("💾 Güncelle ve Kaydet", use_container_width=True):
-        if secili_durum == "bos" and not secili_not.strip():
+    if st.button("💾 Rezervasyonu Otomatik İşle", use_container_width=True):
+        if giris_tarihi >= cikis_tarihi:
+            st.error("HATA: Çıkış tarihi, giriş tarihinden sonra olmalıdır!")
+        else:
+            # İki tarih arasındaki tüm günleri bulup döngüye alıyoruz
+            current_date = giris_tarihi
+            while current_date <= cikis_tarihi:
+                # Veritabanı anahtarı formatı: "YIL-AY-GÜN" (Örn: "2026-5-28")
+                key = f"{current_date.year}-{current_date.month}-{current_date.day}"
+                
+                # Durum Belirleme Mantığı:
+                if current_date == giris_tarihi:
+                    durum = "giris"      # İlk gün Giriş Günü
+                elif current_date == cikis_tarihi:
+                    durum = "cikis"      # Son gün Çıkış Günü
+                else:
+                    durum = "dolu"       # Aradaki tüm günler Tam Dolu
+                    
+                st.session_state.takvim_verisi[key] = {"status": durum, "note": rez_notu}
+                current_date += timedelta(days=1)
+                
+            save_data(st.session_state.takvim_verisi)
+            st.success(f"{giris_tarihi} ile {cikis_tarihi} arasındaki günler başarıyla dolduruldu!")
+            st.rerun()
+
+    # --- 🗑️ HIZLI REZERVASYON İPTALİ (SİLME) ---
+    st.subheader("🗑️ Rezervasyon İptal Et / Günleri Boşalt")
+    col_sil1, col_sil2 = st.columns(2)
+    with col_sil1:
+        sil_baslangic = st.date_input("Silinecek Aralık Başlangıcı", value=datetime.now())
+    with col_sil2:
+        sil_bitis = st.date_input("Silinecek Aralık Bitişi", value=datetime.now())
+        
+    if st.button("❌ Seçili Aralığı Tamamen Boşalt (Müsait Yap)", use_container_width=True):
+        current_date = sil_baslangic
+        silinen_adet = 0
+        while current_date <= sil_bitis:
+            key = f"{current_date.year}-{current_date.month}-{current_date.day}"
             if key in st.session_state.takvim_verisi:
                 del st.session_state.takvim_verisi[key]
-        else:
-            st.session_state.takvim_verisi[key] = {"status": secili_durum, "note": secili_not}
+                silinen_adet += 1
+            current_date += timedelta(days=1)
             
         save_data(st.session_state.takvim_verisi)
-        st.success(f"{secili_gun} {aylar_tr[secili_ay-1]} {secili_yil} başarıyla güncellendi!")
+        st.warning(f"Seçilen aralıktaki {silinen_adet} günün rezervasyonu silindi ve müsait yapıldı.")
         st.rerun()
 
     # --- TAKVİM GÖRSELLEŞTİRME ---
     st.write("---")
     st.subheader(f"📅 {aylar_tr[secili_ay-1]} {secili_yil} Takvimi")
     
-    # HATALI PARAMETRELERİN HEPSİ DOĞRUSUYLA (unsafe_allow_html=True) DEĞİŞTİRİLDİ
     st.markdown("""
     <div style='display: flex; gap: 10px; margin-bottom: 15px; font-size: 12px; justify-content: center;'>
         <span style='background:#f8f9fa; color:black; padding:5px; border-radius:5px; border:1px solid #ddd'>⚪ Müsait</span>
@@ -161,6 +189,7 @@ if check_password():
     st.write("---")
     st.subheader("📋 Bu Ayın Rezervasyon Notları")
     not_bulundu = False
+    _, num_days = calendar.monthrange(secili_yil, secili_ay)
     for d in range(1, num_days + 1):
         k = f"{secili_yil}-{secili_ay}-{d}"
         if k in st.session_state.takvim_verisi:
