@@ -12,8 +12,8 @@ import os
 from datetime import datetime
 from PIL import Image
 
-# Sayfa Ayarları (Sekme adı ve ikon)
-st.set_page_config(page_title="Villa Cennet Rezervasyon Paneli", page_icon="📅", layout="centered")
+# Sayfa Ayarları
+st.set_page_config(page_title="Villa Cennet Rezervasyon Paneli", page_icon="🏡", layout="centered")
 
 # --- VERİ YÖNETİMİ ---
 DATA_FILE = "villa_takvim_veri.json"
@@ -42,7 +42,6 @@ def check_password():
     if not st.session_state.authenticated:
         st.title("🔒 Giriş Yetkisi Gerekli")
         sifre = st.text_input("Lütfen Giriş Şifresini Yazın:", type="password")
-        # BURADAN ŞİFRENİ DEĞİŞTİREBİLİRSİN:
         if st.button("Giriş Yap") and sifre == "batur123":
             st.session_state.authenticated = True
             st.rerun()
@@ -51,15 +50,14 @@ def check_password():
         return False
     return True
 
-# Eğer şifre doğru girilmediyse kodun geri kalanını çalıştırma
 if check_password():
     
-    # --- LOGO ALANI ---
     if os.path.exists("logo.jpg"):
         image = Image.open("logo.jpg")
         st.image(image, use_container_width=True)
     
-    st.title("🏡 Villa Rezervasyon Yönetimi")
+    # İŞTE O DEĞİŞEN BAŞLIK:
+    st.title("🏡 Villa Cennet Rezervasyon Yönetimi")
     st.write("Telefon ve bilgisayardan anlık müsaitlik yönetim paneli.")
     
     # --- AY / YIL SEÇİMİ ---
@@ -70,12 +68,11 @@ if check_password():
         secili_yil = st.selectbox("Yıl Seçin", options=[2026, 2027, 2028], index=0)
     with col_ay:
         aylar_tr = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
-        secili_ay = st.selectbox("Ay Seçin", options=list(range(1, 13)), format_func=lambda x: aylar_tr[x-1], index=4) # Varsayılan Mayıs
+        secili_ay = st.selectbox("Ay Seçin", options=list(range(1, 13)), format_func=lambda x: aylar_tr[x-1], index=4)
 
-    # --- GÜNCELLEME FORMU (Seçilen Gün İçin) ---
+    # --- GÜNCELLEME FORMU ---
     st.subheader("📝 Gün Durumu Güncelle")
     
-    # Ay içindeki gün sayısını bulalım
     _, num_days = calendar.monthrange(secili_yil, secili_ay)
     
     col_gun, col_durum = st.columns([1, 2])
@@ -86,7 +83,7 @@ if check_password():
         secili_durum_metin = st.selectbox("Durum", options=list(durum_secenekleri.keys()))
         secili_durum = durum_secenekleri[secili_durum_metin]
         
-    secili_not = st.text_input("Rezervasyon Notu (Müşteri adı, kapora, telephone vb.):")
+    secili_not = st.text_input("Rezervasyon Notu (Müşteri adı, kapora, telefon vb.):")
     
     key = f"{secili_yil}-{secili_ay}-{secili_gun}"
     
@@ -105,7 +102,7 @@ if check_password():
     st.write("---")
     st.subheader(f"📅 {aylar_tr[secili_ay-1]} {secili_yil} Takvimi")
     
-    # Renk paleti bilgilendirmesi
+    # HATALI PARAMETRELERİN HEPSİ DOĞRUSUYLA (unsafe_allow_html=True) DEĞİŞTİRİLDİ
     st.markdown("""
     <div style='display: flex; gap: 10px; margin-bottom: 15px; font-size: 12px; justify-content: center;'>
         <span style='background:#f8f9fa; color:black; padding:5px; border-radius:5px; border:1px solid #ddd'>⚪ Müsait</span>
@@ -115,13 +112,11 @@ if check_password():
     </div>
     """, unsafe_allow_html=True)
 
-    # Haftanın günleri başlığı
     cols = st.columns(7)
     gunler = ["Pt", "Sl", "Ça", "Pe", "Cu", "Ct", "Pa"]
     for i, g in enumerate(gunler):
         cols[i].markdown(f"<center><b>{g}</b></center>", unsafe_allow_html=True)
         
-    # Takvim günlerini matris olarak alalım
     cal = calendar.Calendar(firstweekday=0)
     weeks = cal.monthdayscalendar(secili_yil, secili_ay)
     
