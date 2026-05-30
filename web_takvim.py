@@ -42,18 +42,18 @@ def check_password():
     if not st.session_state.authenticated:
         st.title("🔒 Giriş Yetkisi Gerekli")
         sifre = st.text_input("Lütfen Giriş Şifresini Yazın:", type="password")
-        if st.button("Giriş Yap") and sifre == "villacennet48": # Şifreni buradan değiştirebilirsin
+        if st.button("Giriş Yap") and sifre == "batur123": # Şifreni buradan değiştirebilirsin
             st.session_state.authenticated = True
             st.rerun()
-        elif sifre and sifre != "villacennet48":
+        elif sifre and sifre != "batur123":
             st.error("Hatalı şifre! Lütfen tekrar deneyin.")
         return False
     return True
 
 if check_password():
     
-    if os.path.exists("villa.jpeg"):
-        image = Image.open("villa.jpeg")
+    if os.path.exists("logo.jpg"):
+        image = Image.open("logo.jpg")
         st.image(image, use_container_width=True)
     
     st.title("🏡 Villa Cennet Rezervasyon Yönetimi")
