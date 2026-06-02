@@ -8,28 +8,30 @@ Created on Thu May 28 10:38:56 2026
 import streamlit as st
 import calendar
 import json
-import os
+import requests  # Yeni eklenen kütüphane
 from datetime import datetime, timedelta
 from PIL import Image
+import os
 
 # Sayfa Ayarları
 st.set_page_config(page_title="Villa Cennet Rezervasyon Paneli", page_icon="🏡", layout="centered")
 
-# --- VERİ YÖNETİMİ ---
-DATA_FILE = "villa_takvim_veri.json"
+# 🔗 GOOGLE EXCEL BAĞLANTI LİNKİNİZ (Burayı Değiştirin)
+URL = "https://script.google.com/macros/s/AKfycbzsF_9OmPRO8BWzEhDj1s0eWGPDA2SoMRVgZO-EVlpOHrd_A6Q4_tDnaaCDBISf5vmW/exec"
 
+# --- VERİ YÖNETİMİ (Artık Google Excel'den Okuyor/Yazıyor) ---
 def load_data():
-    if os.path.exists(DATA_FILE):
-        try:
-            with open(DATA_FILE, "r") as f:
-                return json.load(f)
-        except:
-            return {}
-    return {}
+    try:
+        response = requests.get(URL)
+        return response.json()
+    except:
+        return {}
 
 def save_data(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f)
+    try:
+        requests.post(URL, json=data)
+    except:
+        pass
 
 if "takvim_verisi" not in st.session_state:
     st.session_state.takvim_verisi = load_data()
@@ -62,7 +64,7 @@ if check_password():
     # --- SADECE YIL SEÇİMİ ---
     secili_yil = st.selectbox("Görüntülenecek Yıl Seçin", options=[2026, 2027, 2028], index=0)
     
-    # --- REZERVASYON EKLEME PANELİ (Açılır Kutu) ---
+    # --- REZERVASYON EKLEME PANELİ ---
     with st.expander("📝 Yeni Rezervasyon Ekle (Tarih Aralığı Seçin)", expanded=False):
         col_tarih1, col_tarih2 = st.columns(2)
         with col_tarih1:
@@ -91,10 +93,10 @@ if check_password():
                     current_date += timedelta(days=1)
                     
                 save_data(st.session_state.takvim_verisi)
-                st.success("Rezervasyon başarıyla işlendi ve takvim güncellendi!")
+                st.success("Rezervasyon başarıyla işlendi ve Google Drive'a kaydedildi!")
                 st.rerun()
 
-    # --- REZERVASYON SİLME PANELİ (Açılır Kutu) ---
+    # --- REZERVASYON SİLME PANELİ ---
     with st.expander("🗑️ Rezervasyon İptal Et / Günleri Boşalt", expanded=False):
         col_sil1, col_sil2 = st.columns(2)
         with col_sil1:
@@ -113,10 +115,10 @@ if check_password():
                 current_date += timedelta(days=1)
                 
             save_data(st.session_state.takvim_verisi)
-            st.warning(f"Seçilen aralıktaki {silinen_adet} günün rezervasyonu temizlendi.")
+            st.warning(f"Seçilen aralıktaki günler temizlendi.")
             st.rerun()
 
-    # --- RENK SKALASI (Sadece bir kez en üstte görünsün) ---
+    # --- RENK SKALASI ---
     st.write("---")
     st.markdown("""
     <div style='display: flex; gap: 10px; margin-bottom: 25px; font-size: 12px; justify-content: center;'>
@@ -127,20 +129,17 @@ if check_password():
     </div>
     """, unsafe_allow_html=True)
 
-    # --- 🔄 TÜM AYLARI SEKANSSAL OLARAK (ALT ALTA) ÇİZME DÖNGÜSÜ ---
+    # --- TÜM AYLARI SEKANSSAL OLARAK ÇİZME ---
     aylar_tr = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
     gunler = ["Pt", "Sl", "Ça", "Pe", "Cu", "Ct", "Pa"]
     
     for ay_indeks in range(1, 13):
-        # Ay Başlığı
         st.subheader(f"📅 {aylar_tr[ay_indeks-1]} {secili_yil}")
         
-        # Haftanın Günleri Başlığı (Pzt, Sal...)
         cols_header = st.columns(7)
         for i, g in enumerate(gunler):
             cols_header[i].markdown(f"<center><b style='color:#7f8c8d; font-size:12px;'>{g}</b></center>", unsafe_allow_html=True)
             
-        # Takvim Gün Matrisi oluşturma
         cal = calendar.Calendar(firstweekday=0)
         weeks = cal.monthdayscalendar(secili_yil, ay_indeks)
         
@@ -181,7 +180,7 @@ if check_password():
                     """
                     cols[i].markdown(cell_html, unsafe_allow_html=True)
                     
-        # --- O AYA AİT NOTLAR (Hemen takvimin altına listelenir) ---
+        # --- O AYA AİT NOTLAR ---
         _, num_days = calendar.monthrange(secili_yil, ay_indeks)
         aylik_not_var_mi = False
         
